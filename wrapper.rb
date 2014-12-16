@@ -21,7 +21,7 @@ class CloudWatchDispatcher
   end
 
   def log_entry(entry)
-    log_stream = "#{entry["SYSLOG_IDENTIFIER"]}[#{entry["_PID"]}]";
+    log_stream = entry["UNIT"].nil? ? "#{entry["SYSLOG_IDENTIFIER"]}[#{entry["_PID"]}]" : entry["UNIT"];
     seq_token = check_log_stream(log_stream);
     res = @cloudwatch.put_log_events({
       log_group_name: @log_group,
