@@ -13,7 +13,7 @@ class CloudWatchDispatcher
     @cloudwatch = Aws::CloudWatchLogs::Client.new()
 
     instance_id = open("http://169.254.169.254/latest/meta-data/instance-id").read
-    @log_group = "#{ENV["PREFIX"]}_#{@instance_id}"
+    @log_group = "#{ENV["PREFIX"]}_#{instance_id}"
 
     # Initialize instance group logs
     ret = @cloudwatch.describe_log_groups({log_group_name_prefix: @log_group, limit: 1})

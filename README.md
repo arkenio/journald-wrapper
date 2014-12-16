@@ -6,9 +6,11 @@ This repository holds the Dockerfile for our journald wrapper to [Amazon CloudWa
 Notes
 -----
 
-This container is designed to be run over a [CoreOS](https://coreos.com/) system, due to his dependency on Etcd. Etcd is used to held last logs pushed, stored under `/config/journald/{node_id}/cursor`.
+This container is designed to be run over a [CoreOS](https://coreos.com/) system, due to his dependency on Etcd. Etcd is used to hold last logs pushed, stored under `/config/journald/{prefix}_{instance_id}/cursor` key.
 
-Also, it needs the service `[systemd-journal-gatewayd.service](http://www.freedesktop.org/software/systemd/man/systemd-journal-gatewayd.service.html)` to be started, that exposes journald logs throught a webpage allowing to use [Server-Sent Events](https://developer.mozilla.org/en-US/docs/Server-sent_events/Using_server-sent_events).
+Also, it needs the service [systemd-journal-gatewayd.service](http://www.freedesktop.org/software/systemd/man/systemd-journal-gatewayd.service.html) to be started, that exposes journald logs throught a webpage allowing to use [Server-Sent Events](https://developer.mozilla.org/en-US/docs/Server-sent_events/Using_server-sent_events).
+
+If you are running this wrapper with an old instance, with lots of existing logs; I strongly recommend you to use the standard gateway web interface to set the last cursor in etcd with a recent log cursor.
 
 Improvements
 -----------
