@@ -19,6 +19,15 @@ Improvements
  - Extract some concepts like; abstract the store used for the last cursor, stack events before sending them to AWS, ...
  - Make it less dependends of an EC2 instance
 
+Mandatory container parameters
+------------------------------
+
+ - CURSOR_PATH: the path in which the last cursor is written. Should be also defined as a volume to be saved in the container host.
+ - AWS_ACCESS_KEY_ID: AWS access key id used to push logs
+ - AWS_SECRET_ACCESS_KEY: AWS access secret
+ - AWS_REGION: AWS region
+ - PREFIX: a prefix to help you identify your cluster. The log group name will be: `PREFIX_INSTANCE-ID`.
+
 Running this container
 ----------------------
 
@@ -29,7 +38,7 @@ Running this container
     docker build -t journald_wrapper .
 
     # run container
-    docker run -d -e AWS_ACCESS_KEY_ID={YOUR_KEY_ID} -e AWS_SECRET_ACCESS_KEY={YOUR_SECRET} -e AWS_REGION={YOUR_REGION} -e PREFIX={A_PREFIX_IDENTIFIER} journald_wrapper
+    docker run -d -v /data/journald:/var/journald -e CURSOR_PATH=/var/journald -e AWS_ACCESS_KEY_ID={YOUR_KEY_ID} -e AWS_SECRET_ACCESS_KEY={YOUR_SECRET} -e AWS_REGION={YOUR_REGION} -e PREFIX={A_PREFIX_IDENTIFIER} journald_wrapper
 
 About Nuxeo
 -----------

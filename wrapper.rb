@@ -7,8 +7,7 @@ require "open-uri"
 
 class CloudWatchDispatcher
   def initialize()
-    # initialize etcd http client
-    @http = Net::HTTP.new('172.17.42.1', 4001)
+    @last_cursor_file = File.join(ENV["CURSOR_PATH"], "last_cursor")
 
     @cloudwatch = Aws::CloudWatchLogs::Client.new()
 
@@ -21,7 +20,7 @@ class CloudWatchDispatcher
   end
 
   def log_entry(entry)
-    log_stream = entry["UNIT"].nil? ? "#{entry["SYSLOG_IDENTIFIER"]}[#{entry["_PID"]}]" : entry["UNIT"];
+    log_stream = entry["UNIT"].nil? ? "#{entry["SYSLOG_IDENTIFIER"]}" : entry["UNIT"];
     seq_token = check_log_stream(log_stream);
     res = @cloudwatch.put_log_events({
       log_group_name: @log_group,
@@ -48,18 +47,17 @@ class CloudWatchDispatcher
   end
 
   def save_cursor(cursor)
-    begin
-      @http.send_request("PUT", "/v2/keys/config/journald/#{@log_group}/cursor", URI.encode_www_form("value" => "#{cursor}"))
-    rescue
-      # do nothing
-    end
+    f = open(@last_cursor_file, "w")
+    f.write(cursor)
+    f.close
   end
 
   def last_cursor()
-    res = @http.send_request("GET", "/v2/keys/config/journald/#{@log_group}/cursor")
-    return nil unless res.code.to_i == 200
-    json = JSON.parse(res.body)
-    return json["node"]["value"]
+    begin
+      open(@last_cursor_file).read
+    rescue
+      nil
+    end
   end
 end
 
