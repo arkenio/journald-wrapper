@@ -54,7 +54,7 @@ class CloudWatchDispatcher
 
   def last_cursor()
     begin
-      open(@last_cursor_file).read
+      open(@last_cursor_file).read.chomp
     rescue
       nil
     end
