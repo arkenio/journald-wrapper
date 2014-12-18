@@ -4,6 +4,7 @@ require "aws-sdk"
 require "json"
 require "net/http"
 require "open-uri"
+require "pp"
 
 class CloudWatchDispatcher
   def initialize()
@@ -20,14 +21,14 @@ class CloudWatchDispatcher
   end
 
   def log_entry(entry)
-    log_stream = entry["_SYSTEMD_UNIT"].nil? ? "#{entry["SYSLOG_IDENTIFIER"]}" : entry["_SYSTEMD_UNIT"];
-    seq_token = check_log_stream(log_stream);
-    res = @cloudwatch.put_log_events({
+    log_stream = entry["_SYSTEMD_UNIT"].nil? ? "#{entry["SYSLOG_IDENTIFIER"]}[#{entry["_PID"]}]" : entry["_SYSTEMD_UNIT"];
+    seq_token, log_stream = check_log_stream(log_stream);
+    @cloudwatch.put_log_events({
       log_group_name: @log_group,
       log_stream_name: log_stream,
       log_events: [{
         timestamp: entry["__REALTIME_TIMESTAMP"].to_i / 1000,
-        message: entry["MESSAGE"]
+        message: entry["MESSAGE"].to_s
       }],
       sequence_token: seq_token
     })
@@ -40,10 +41,9 @@ class CloudWatchDispatcher
       log_stream_name_prefix: "#{name}",
       limit: 1})
 
-    return ret.log_streams[0][:upload_sequence_token] unless ret.log_streams.length == 0
-
-    @cloudwatch.create_log_stream({log_group_name: @log_group, log_stream_name: "#{name}"})
-    nil
+    # Return sequence token + found log_stream_name
+    return ret.log_streams[0][:upload_sequence_token], ret.log_streams[0][:log_stream_name] unless ret.log_streams.length == 0
+    return nil, name
   end
 
   def save_cursor(cursor)
@@ -65,9 +65,19 @@ cw = CloudWatchDispatcher.new
 EM.run do
   source = EventMachine::EventSource.new('http://172.17.42.1:19531/entries?follow', nil, {"Range" => "entries=#{cw.last_cursor}"})
   source.message do |message|
+    entry = JSON.parse(message)
     begin
-      cw.log_entry(JSON.parse(message))
-    rescue
+      cw.log_entry(entry)
+    rescue Aws::CloudWatchLogs::Errors::ThrottlingException
+      # Raised in case of rate limit (max 5 inserts / sec)
+      sleep 0.3
+      retry
+    rescue => e
+      # skip this entry ...
+      p e.message
+      pp e.backtrace
+      pp entry
+      p "----------"
     end
   end
   source.start
