@@ -43,6 +43,8 @@ class CloudWatchDispatcher
 
     # Return sequence token + found log_stream_name
     return ret.log_streams[0][:upload_sequence_token], ret.log_streams[0][:log_stream_name] unless ret.log_streams.length == 0
+
+    @cloudwatch.create_log_stream({log_group_name: @log_group, log_stream_name: "#{name}"})
     return nil, name
   end
 
